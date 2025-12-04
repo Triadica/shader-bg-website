@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shader Background - macOS 动态桌面背景应用 | Metal 着色器</title>
+    <meta name="description" content="基于 Metal 着色器的 macOS 动态桌面背景应用，提供 70+ 种粒子效果，支持多屏幕适配与智能性能优化，5K 分辨率流畅运行。">
+    <meta name="keywords" content="Shader Background, macOS, 动态桌面, 桌面背景, Metal, 着色器, 粒子效果, GPU加速, 壁纸, wallpaper">
+    <meta name="author" content="Triadica">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://shader-bg.tiye.me/">
+    <meta property="og:title" content="Shader Background - macOS 动态桌面背景应用">
+    <meta property="og:description" content="基于 Metal 着色器的 macOS 动态桌面背景，提供 70+ 种粒子效果，支持多屏幕适配与智能性能优化。">
+    <meta property="og:image" content="https://cos-sh.tiye.me/shader-bg/noise_halo.png?imageMogr2/thumbnail/1200x">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://shader-bg.tiye.me/">
+    <meta name="twitter:title" content="Shader Background - macOS 动态桌面背景应用">
+    <meta name="twitter:description" content="基于 Metal 着色器的 macOS 动态桌面背景，提供 70+ 种粒子效果，支持多屏幕适配与智能性能优化。">
+    <meta name="twitter:image" content="https://cos-sh.tiye.me/shader-bg/noise_halo.png?imageMogr2/thumbnail/1200x">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://shader-bg.tiye.me/">
+
+    <link rel="icon" type="image/png" href="https://cos-sh.tiye.me/shader-bg/icon_32x32@2x.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            color: #ffffff;
+        }
+
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        .bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        .bg-image.active {
+            opacity: 1;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 2rem;
+            padding-bottom: 15vh;
+            text-align: center;
+        }
+
+        .container::before {
+            content: '';
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60vh;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 1s ease-out;
+        }
+
+        p {
+            font-size: 1.5rem;
+            max-width: 600px;
+            line-height: 1.6;
+            text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 1s ease-out 0.2s backwards;
+        }
+
+        .cta-button {
+            margin-top: 2rem;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 1s ease-out 0.4s backwards;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            animation: fadeInUp 1s ease-out 0.4s backwards;
+        }
+
+        .download-button {
+            margin-top: 2rem;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, rgba(100, 200, 255, 0.4), rgba(150, 100, 255, 0.4));
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .download-button:hover {
+            background: linear-gradient(135deg, rgba(100, 200, 255, 0.6), rgba(150, 100, 255, 0.6));
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .download-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .other-versions {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .other-versions:hover {
+            color: rgba(255, 255, 255, 1);
+            text-decoration: underline;
+        }
+
+        .github-hint {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+            animation: fadeInUp 1s ease-out 0.6s backwards;
+        }
+
+        .github-hint a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .github-hint a:hover {
+            color: rgba(255, 255, 255, 1);
+            text-decoration: underline;
+        }
+
+        .bg-info {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+
+        .nav-buttons {
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .nav-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            p {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-container">
+        <div class="bg-image" id="bg1"></div>
+        <div class="bg-image" id="bg2"></div>
+    </div>
+
+    <div class="container">
+        <h1>Shader Background</h1>
+        <p>基于 Metal 着色器的 macOS 动态桌面背景，支持多种粒子效果、多屏幕适配与智能性能优化。</p>
+        <div class="button-group">
+            <a class="download-button" href="https://github.com/Triadica/shader-bg/releases/download/0.0.3/shader-bg-v0.0.3.dmg">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                下载 macOS 版本
+            </a>
+            <a class="other-versions" href="https://github.com/Triadica/shader-bg/releases">查看其他版本</a>
+        </div>
+        <p class="github-hint">开源项目，代码托管于 <a href="https://github.com/Triadica/shader-bg" target="_blank">GitHub</a></p>
+    </div>
+
+    <div class="nav-buttons">
+        <button class="nav-btn" id="prevBtn">◀</button>
+        <button class="nav-btn" id="nextBtn">▶</button>
+    </div>
+
+    <div class="bg-info" id="bgInfo"></div>
+
+    <script>
+        const BASE_URL = 'https://cos-sh.tiye.me/shader-bg/';
+
+        const images = [
+            'ColorfulArcs.png',
+            'DomainRepetition.png',
+            'DroppyThingies.png',
+            'Electricity.png',
+            'FloatingBubbles.png',
+            'HexagonalMandelbrot.png',
+            'InfiniteRing.png',
+            'JuliaSet.png',
+            'LogZoomFlower.png',
+            'Mandala.png',
+            'Microwaves.png',
+            'MoonForest.png',
+            'MovingPixels.png',
+            'NeonParallax.png',
+            'NewtonCloud.png',
+            'PlasmaWaves.png',
+            'PoincareHexagons.png',
+            'RainRipples.png',
+            'RainbowRoad.png',
+            'SineMountains.png',
+            'SpiralStainedGlass.png',
+            'Sunflower3.png',
+            'Sunset925.png',
+            'Taiji.png',
+            'Tesseract4D.png',
+            'TorusInterior.png',
+            'ZoomedMaze.png',
+            'apollian_twist.png',
+            'bubbles.png',
+            'butterfly_ai.png',
+            'city_of_kali.png',
+            'clock.png',
+            'cosmic_fireworks.png',
+            'event_horizon.png',
+            'galaxy_spiral.png',
+            'geode_bg.png',
+            'glowy_orb.png',
+            'golden_julia.png',
+            'hazy_morning_golf.png',
+            'hyperbolic_rings.png',
+            'korotkoe.png',
+            'mobius_flow.png',
+            'mobius_knot.png',
+            'moon_tree.png',
+            'newton_basins.png',
+            'noise_halo.png',
+            'particles_in_gravity.png',
+            'petal_sphere.png',
+            'pixellated_rain.png',
+            'rainbow_twister.png',
+            'red_blue_swirl.png',
+            'rhombus.png',
+            'ring_remix.png',
+            'rotating_lorenz.png',
+            'shooting_stars.png',
+            'simple_plasma.png',
+            'sin_move.png',
+            'sins_and_steps.png',
+            'smoke_ring.png',
+            'sonata.png',
+            'spiral_for_windows.png',
+            'stained_lights.png',
+            'star_travelling.png',
+            'surah_relax.png',
+            'tooned_cloud.png',
+            'vortex_street.png',
+            'warped_strings.png',
+            'waveform.png',
+            'world_tree.png',
+            'year_of_truchets.png'
+        ];
+
+        let currentIndex = Math.floor(Math.random() * images.length);
+        let activeBg = 1;
+        const SWITCH_INTERVAL = 7000; // 7秒切换一次
+        let autoSwitchTimer = null;
+
+        const bg1 = document.getElementById('bg1');
+        const bg2 = document.getElementById('bg2');
+        const bgInfo = document.getElementById('bgInfo');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        function getImageUrl(filename) {
+            // 根据屏幕尺寸选择合适的图片大小
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            const maxDim = Math.max(screenWidth, screenHeight);
+
+            // 腾讯云 COS 图片处理参数
+            let size;
+            if (maxDim <= 1280) {
+                size = 1280;
+            } else if (maxDim <= 1920) {
+                size = 1920;
+            } else {
+                size = 2560;
+            }
+
+            return `${BASE_URL}${filename}?imageMogr2/thumbnail/${size}x`;
+        }
+
+        function updateBackground(index) {
+            const imageUrl = getImageUrl(images[index]);
+            const imageName = images[index].replace('.png', '').replace(/_/g, ' ');
+
+            // 预加载图片
+            const img = new Image();
+            img.onload = () => {
+                if (activeBg === 1) {
+                    bg2.style.backgroundImage = `url('${imageUrl}')`;
+                    bg1.classList.remove('active');
+                    bg2.classList.add('active');
+                    activeBg = 2;
+                } else {
+                    bg1.style.backgroundImage = `url('${imageUrl}')`;
+                    bg2.classList.remove('active');
+                    bg1.classList.add('active');
+                    activeBg = 1;
+                }
+
+                bgInfo.textContent = `${imageName} (${index + 1}/${images.length})`;
+            };
+            img.src = imageUrl;
+        }
+
+        function nextImage() {
+            currentIndex = (currentIndex + 1) % images.length;
+            updateBackground(currentIndex);
+            resetAutoSwitch();
+        }
+
+        function prevImage() {
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            updateBackground(currentIndex);
+            resetAutoSwitch();
+        }
+
+        function resetAutoSwitch() {
+            if (autoSwitchTimer) {
+                clearInterval(autoSwitchTimer);
+            }
+            autoSwitchTimer = setInterval(nextImage, SWITCH_INTERVAL);
+        }
+
+        // 初始化
+        updateBackground(currentIndex);
+        resetAutoSwitch();
+
+        // 按钮事件
+        prevBtn.addEventListener('click', prevImage);
+        nextBtn.addEventListener('click', nextImage);
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                prevImage();
+            } else if (e.key === 'ArrowRight') {
+                nextImage();
+            }
+        });
+
+        // 窗口大小改变时重新加载适合尺寸的图片
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                updateBackground(currentIndex);
+            }, 300);
+        });
+    </script>
+</body>
+</html>
