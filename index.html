@@ -218,30 +218,37 @@
             border-radius: 20px;
         }
 
-        .nav-buttons {
+        .toggle-btn {
             position: fixed;
             bottom: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .nav-btn {
+            left: 1rem;
             width: 40px;
             height: 40px;
             border: none;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.15);
             color: #fff;
-            font-size: 1.2rem;
+            font-size: 1rem;
             cursor: pointer;
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
+            z-index: 10;
         }
 
-        .nav-btn:hover {
+        .toggle-btn:hover {
             background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container.hidden,
+        .bg-info.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .container,
+        .bg-info {
+            transition: opacity 0.5s ease;
         }
 
         @keyframes fadeInUp {
@@ -286,12 +293,9 @@
         <p class="github-hint">开源项目，代码托管于 <a href="https://github.com/Triadica/shader-bg" target="_blank">GitHub</a></p>
     </div>
 
-    <div class="nav-buttons">
-        <button class="nav-btn" id="prevBtn">◀</button>
-        <button class="nav-btn" id="nextBtn">▶</button>
-    </div>
-
     <div class="bg-info" id="bgInfo"></div>
+
+    <button class="toggle-btn" id="toggleBtn" title="隐藏/显示内容">👁</button>
 
     <script>
         const BASE_URL = 'https://cos-sh.tiye.me/shader-bg/';
@@ -377,8 +381,9 @@
         const bg1 = document.getElementById('bg1');
         const bg2 = document.getElementById('bg2');
         const bgInfo = document.getElementById('bgInfo');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const container = document.querySelector('.container');
+        let isHidden = false;
 
         function getImageUrl(filename) {
             // 根据屏幕尺寸选择合适的图片大小
@@ -446,16 +451,18 @@
         updateBackground(currentIndex);
         resetAutoSwitch();
 
-        // 按钮事件
-        prevBtn.addEventListener('click', prevImage);
-        nextBtn.addEventListener('click', nextImage);
+        // 隐藏/显示内容
+        toggleBtn.addEventListener('click', () => {
+            isHidden = !isHidden;
+            container.classList.toggle('hidden', isHidden);
+            bgInfo.classList.toggle('hidden', isHidden);
+            toggleBtn.textContent = isHidden ? '👁‍🗨' : '👁';
+        });
 
         // 键盘控制
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                prevImage();
-            } else if (e.key === 'ArrowRight') {
-                nextImage();
+            if (e.key === ' ') {
+                toggleBtn.click();
             }
         });
 
