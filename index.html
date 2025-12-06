@@ -194,6 +194,19 @@
             animation: fadeInUp 1s ease-out 0.6s backwards;
         }
 
+        .github-hint.warning {
+            color: rgba(255, 255, 100, 0.8);
+            font-weight: 500;
+        }
+
+        .github-hint code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8em;
+        }
+
         .github-hint a {
             color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
@@ -282,7 +295,7 @@
         <h1>Shader Background</h1>
         <p>基于 Metal 着色器的 macOS 动态桌面背景，支持多种粒子效果、多屏幕适配与智能性能优化。</p>
         <div class="button-group">
-            <a class="download-button" href="https://github.com/Triadica/shader-bg/releases/download/0.0.3/shader-bg-v0.0.3.dmg">
+            <a class="download-button" href="https://github.com/Triadica/shader-bg/releases/download/0.0.4/shader-bg-v0.0.4.dmg">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
@@ -291,6 +304,7 @@
             <a class="other-versions" href="https://github.com/Triadica/shader-bg/releases">查看其他版本</a>
         </div>
         <p class="github-hint">开源项目，代码托管于 <a href="https://github.com/Triadica/shader-bg" target="_blank">GitHub</a></p>
+        <p class="github-hint warning">⚠️ 由于应用未签名，安装后请在终端执行：<code>xattr -cr /Applications/shader-bg.app</code> 以移除隔离属性</p>
     </div>
 
     <div class="bg-info" id="bgInfo"></div>
